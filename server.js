@@ -46,7 +46,7 @@ app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
     provider: "ElevenLabs",
-    apiKeyConfigured: Boolean(process.env.sk_aaf76d456d75fbf6b254c887de70b60147633618d5d95d63),
+    apiKeyConfigured: Boolean(process.env.ELEVENLABS_API_KEY),
     configuredVoices: Object.values(VOICES).filter(Boolean).length
   });
 });
@@ -54,8 +54,8 @@ app.get("/api/health", (_req, res) => {
 app.post("/api/tts", async (req, res) => {
   try {
     const { text, language, voiceId, emotion = "natural", speed = 1, format = "mp3" } = req.body || {};
-    if (!process.env.sk_aaf76d456d75fbf6b254c887de70b60147633618d5d95d63) {
-      return res.status(503).json({ error: "sk_aaf76d456d75fbf6b254c887de70b60147633618d5d95d63.env" });
+    if (!process.env.ELEVENLABS_API_KEY) {
+      return res.status(503).json({ error: "ELEVENLABS_API_KEY .env ফাইলে সেট করা নেই।" });
     }
     if (typeof text !== "string" || !text.trim()) {
       return res.status(400).json({ error: "Text is required." });
@@ -80,7 +80,7 @@ app.post("/api/tts", async (req, res) => {
       {
         method: "POST",
         headers: {
-          "xi-api-key": process.env.sk_aaf76d456d75fbf6b254c887de70b60147633618d5d95d63,
+          "xi-api-key": process.env.ELEVENLABS_API_KEY,
           "Content-Type": "application/json",
           "Accept": "audio/mpeg"
         },
