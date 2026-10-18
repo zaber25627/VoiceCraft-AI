@@ -1,56 +1,22 @@
-# VoiceCraft AI — Starter Kit
+# VoiceCraft AI — fixed frontend/backend package
 
-## What's included
-- `public/index.html`: responsive Premium Dark UI for Bengali, English and Hindi.
-- `server.js`: Express backend that calls ElevenLabs TTS; API key stays on the server.
-- `.env.example`: environment and voice-ID template.
-- `package.json`: Node dependencies.
+## Files
+- `index.html`: GitHub Pages frontend; its Generate Audio request points to `https://voicecraft-ai.onrender.com/api/tts`.
+- `server.js`: Express API with CORS enabled for `https://zaber25627.github.io`.
+- `public/index.html`: copy of the frontend for deployments where Render serves the page too.
+- `package.json`: Node.js dependencies and start command.
+- `.env.example`: names of environment variables only; it does not contain a real API key.
 
-## Important limitations
-- UI voice names (Maya, Tuli, etc.) are example labels. They do not correspond to actual provider voices until you configure real ElevenLabs voice IDs.
-- Provider voice availability, language quality, emotion control, and pricing depend on the selected model/account. Test Bengali (Bangladesh) pronunciation before production.
-- Browser preview uses the device's built-in speech synthesis and is not an MP3 export.
-- The pitch control is a UI placeholder; this ElevenLabs starter backend does not apply pitch shifting.
-- History/favorites are stored in the current browser's localStorage. Generated audio object URLs are temporary; long-term audio history requires persistent object storage/database.
-- The emotion text tags are best-effort instructions and depend on model support; they do not guarantee a specific emotion.
+## Render setup
+1. Upload/commit `server.js`, `package.json`, and `public/index.html` to the backend service repository.
+2. Render build command: `npm install`
+3. Render start command: `npm start`
+4. In Render → Environment, set `ELEVENLABS_API_KEY` to a newly created private ElevenLabs API key. Do not put it in HTML, GitHub, or this ZIP.
+5. Set `VOICE_BN_FEMALE_SOFT`, `VOICE_EN_FEMALE_SOFT`, `VOICE_HI_FEMALE_SOFT`, and `VOICE_HI_MALE_WARM` to valid voice IDs from your own ElevenLabs account if the defaults are not valid for your account. Set other `VOICE_*` values only when you have the matching real IDs.
+6. Check `https://voicecraft-ai.onrender.com/api/health`. The response shows which UI voice slots are configured.
 
-## Run locally
-1. Install Node.js 18 or newer.
-2. Copy `public/index.html` into the `public/` folder (already arranged in this kit).
-3. Copy `.env.example` to `.env`.
-4. Create an ElevenLabs API key and put it in `.env`.
-5. In ElevenLabs, select voices that support your intended languages and copy their actual voice IDs into the matching `VOICE_*` variables.
-6. In a terminal, run:
-   ```bash
-   npm install
-   npm start
-   ```
-7. Open `http://localhost:3000`.
+## GitHub Pages setup
+Upload the root `index.html` to the `main` branch at the repository root (or replace the current root `index.html`). GitHub Pages should publish the repository root.
 
-## Deploy safely
-Deploy the Node server to a backend host (for example, a Node-capable app host). Set environment variables in that host's secret/environment settings. Do not publish `.env` or embed API keys in client-side HTML. Add authentication, per-user quotas/rate limits, billing controls, request logging with no sensitive text, and persistent storage before public launch.
-
-## API contract
-`POST /api/tts`
-```json
-{
-  "text": "Hello world",
-  "language": "en",
-  "voiceId": "en-female-soft",
-  "emotion": "natural",
-  "speed": 1.0,
-  "pitch": 0,
-  "format": "mp3"
-}
-```
-Success response: `audio/mpeg` bytes. Errors: JSON `{ "error": "..." }`.
-`GET /api/health` reports whether the key is configured and how many voice IDs are mapped; it never returns the key.
-
-
-## Voice IDs configured in this update
-- Bengali: `YyFoWJwI20bOlOPfwy6X`
-- English: `3DF5lO2rtqNp6A9emuj0`
-- Hindi female: `HBZPYXXu7MHBOUlDZtD6`
-- Hindi male: `4tRn1lSkEn13EVTuqb0g`
-
-Only these four IDs were available in the conversation. The API key is intentionally NOT included in this package; add a newly created secret key to Render as `ELEVENLABS_API_KEY`. Voice labels/gender should be verified in the ElevenLabs dashboard.
+## Important
+The UI displays 18 voice choices, but only slots with a real provider Voice ID set in Render can generate audio. The labels such as Maya, Tuli, Olivia, etc. are UI names, not ElevenLabs voice IDs. Configure the missing voice IDs in Render Environment before using those slots.
