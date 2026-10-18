@@ -69,75 +69,8 @@ $("pitch").oninput=()=> $("pitchVal").textContent=$("pitch").value;
 $("clearBtn").onclick=()=>{$("textInput").value="";$("charCount").textContent="0 characters";setStatus("টেক্সট মুছে ফেলা হয়েছে।")};
 $("pasteBtn").onclick=async()=>{try{$("textInput").value=await navigator.clipboard.readText();$("textInput").dispatchEvent(new Event("input"));setStatus("Clipboard থেকে টেক্সট পেস্ট হয়েছে।","good")}catch(e){setStatus("Clipboard permission পাওয়া যায়নি। টেক্সট বক্সে long-press করে Paste করুন।","error")}};
 $("previewBtn").onclick=()=>{let t=$("textInput").value.trim();if(!t)return setStatus("আগে টেক্সট লিখুন।","error");if(!("speechSynthesis"in window))return setStatus("এই ব্রাউজারে speech preview সমর্থিত নয়।","error");speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang={bn:"bn-BD",en:"en-US",hi:"hi-IN"}[$("language").value];let voices=speechSynthesis.getVoices();let match=voices.find(v=>v.lang.toLowerCase().startsWith(u.lang.toLowerCase().slice(0,2)));if(match)u.voice=match;u.rate=Number($("speed").value);u.pitch=Math.max(.5,1+Number($("pitch").value)*.1);u.onstart=()=>setStatus("ব্রাউজারের sample voice চলছে — এটি AI export নয়।","good");u.onend=()=>setStatus("Preview শেষ। AI MP3 বানাতে Generate audio চাপুন।");u.onerror=()=>setStatus("Preview চালানো যায়নি।","error");speechSynthesis.speak(u)};
-$("generateBtn").onclick=async()=>{let text=$("textInput").value.trim();if(!text)return setStatus("আগে টেক্সট লিখুন।","error");if(text.length>12000)return setStatus("একবারে সর্বোচ্চ 12,000 অক্ষর পাঠান; লম্বা লেখা ভাগ করুন।","error");let btn=$("generateBtn");btn.disabled=true;btn.textContent="Generating…";setStatus("AI সার্ভারে অডিও তৈরি করার অনুরোধ পাঠানো হচ্ছে…");try{let r=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,language:$("language").value,voiceId:selectedVoice,emotion:$("emotion").value,speed:Number($("speed").value),pitch:Number($("pitch").value),format:"mp3"})});if(!r.ok){let d={};try{d=await r.json()}catch{}throw new Error(d.error||("API error "+r.status+" — backend চালু আছে কি না দেখুন"))}generatedBlob=await r.blob();if(!generatedBlob.size)throw new Error("সার্ভার খালি অডিও ফেরত দিয়েছে।");if(generatedUrl)URL.revokeObjectURL(generatedUrl);generatedUrl=URL.createObjectURL(generatedBlob);$("audioPlayer").src=generatedUrl;$("audioPlayer").classList.remove("hidden");$("sidePlayer").src=generatedUrl;$("sidePlayer").classList.remove("hidden");$("playerText").textContent="Your audio is ready";$("downloadRow").classList.remove("hidden");let v=getVoice(),filename=($("filename").value.trim()||"voicecraft-audio").replace(/[^a-zA-Z0-9-_]/g,"-");historyData.unshift({text:text.slice(0,180),lang:langName($("language").value),voice:v.name,date:Date.now(),url:generatedUrl,filename});historyData=historyData.slice(0,8);persist();setStatus("অডিও তৈরি হয়েছে! এখন শুনুন বা MP3 ডাউনলোড করুন।","good")}catch(e){setStatus("অডিও তৈরি হয়নি: "+e.message+". server.js চালু করুন এবং .env-এ API key ও voice ID দিন।","error")}finally{btn.disabled=false;btn.textContent="✦ Generate audio"}};
-$("downloadBtn").onclick=()=>{$("generateBtn").onclick=async()=>{
-  let text=$("textInput").value.trim();
-  if(!text)return setStatus("আগে টেক্সট লিখুন।","error");
-  if(text.length>12000)return setStatus("একবারে সর্বোচ্চ 12,000 অক্ষর পাঠান; লম্বা লেখা ভাগ করুন।","error");
-
-  let btn=$("generateBtn");
-  btn.disabled=true;
-  btn.textContent="Generating…";
-  setStatus("AI সার্ভারে অডিও তৈরি করার অনুরোধ পাঠানো হচ্ছে…");
-
-  try{
-    let r=await fetch("https://voicecraft-ai.onrender.com/api/tts",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        text,
-        language:$("language").value,
-        voiceId:selectedVoice,
-        emotion:$("emotion").value,
-        speed:Number($("speed").value),
-        pitch:Number($("pitch").value),
-        format:"mp3"
-      })
-    });
-
-    if(!r.ok){
-      let d={};
-      try{d=await r.json()}catch{}
-      throw new Error(d.error||("API error "+r.status));
-    }
-
-    generatedBlob=await r.blob();
-    if(!generatedBlob.size)throw new Error("সার্ভার খালি অডিও ফেরত দিয়েছে।");
-
-    if(generatedUrl)URL.revokeObjectURL(generatedUrl);
-    generatedUrl=URL.createObjectURL(generatedBlob);
-
-    $("audioPlayer").src=generatedUrl;
-    $("audioPlayer").classList.remove("hidden");
-    $("sidePlayer").src=generatedUrl;
-    $("sidePlayer").classList.remove("hidden");
-    $("playerText").textContent="Your audio is ready";
-    $("downloadRow").classList.remove("hidden");
-
-    let v=getVoice();
-    let filename=($("filename").value.trim()||"voicecraft-audio")
-      .replace(/[^a-zA-Z0-9-_]/g,"-");
-
-    historyData.unshift({
-      text:text.slice(0,180),
-      lang:langName($("language").value),
-      voice:v.name,
-      date:Date.now(),
-      url:generatedUrl,
-      filename
-    });
-
-    historyData=historyData.slice(0,8);
-    persist();
-    setStatus("অডিও তৈরি হয়েছে! এখন শুনুন বা MP3 ডাউনলোড করুন।","good");
-
-  }catch(e){
-    setStatus("অডিও তৈরি হয়নি: "+e.message,"error");
-  }finally{
-    btn.disabled=false;
-    btn.textContent="✦ Generate audio";
-  }
-};
+$("generateBtn").onclick=async()=>{let text=$("textInput").value.trim();if(!text)return setStatus("আগে টেক্সট লিখুন।","error");if(text.length>12000)return setStatus("একবারে সর্বোচ্চ 12,000 অক্ষর পাঠান; লম্বা লেখা ভাগ করুন।","error");let btn=$("generateBtn");btn.disabled=true;btn.textContent="Generating…";setStatus("AI সার্ভারে অডিও তৈরি করার অনুরোধ পাঠানো হচ্ছে…");try{let r=await fetch("https://voicecraft-ai.onrender.com/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,language:$("language").value,voiceId:selectedVoice,emotion:$("emotion").value,speed:Number($("speed").value),pitch:Number($("pitch").value),format:"mp3"})});if(!r.ok){let d={};try{d=await r.json()}catch{}throw new Error(d.error||("API error "+r.status+" — backend চালু আছে কি না দেখুন"))}generatedBlob=await r.blob();if(!generatedBlob.size)throw new Error("সার্ভার খালি অডিও ফেরত দিয়েছে।");if(generatedUrl)URL.revokeObjectURL(generatedUrl);generatedUrl=URL.createObjectURL(generatedBlob);$("audioPlayer").src=generatedUrl;$("audioPlayer").classList.remove("hidden");$("sidePlayer").src=generatedUrl;$("sidePlayer").classList.remove("hidden");$("playerText").textContent="Your audio is ready";$("downloadRow").classList.remove("hidden");let v=getVoice(),filename=($("filename").value.trim()||"voicecraft-audio").replace(/[^a-zA-Z0-9-_]/g,"-");historyData.unshift({text:text.slice(0,180),lang:langName($("language").value),voice:v.name,date:Date.now(),url:generatedUrl,filename});historyData=historyData.slice(0,8);persist();setStatus("অডিও তৈরি হয়েছে! এখন শুনুন বা MP3 ডাউনলোড করুন।","good")}catch(e){setStatus("অডিও তৈরি হয়নি: "+e.message+". server.js চালু করুন এবং .env-এ API key ও voice ID দিন।","error")}finally{btn.disabled=false;btn.textContent="✦ Generate audio"}};
+$("downloadBtn").onclick=()=>{if(!generatedBlob)return;let a=document.createElement("a");a.href=generatedUrl;a.download=(($("filename").value.trim()||"voicecraft-audio").replace(/[^a-zA-Z0-9-_]/g,"-"))+".mp3";a.click()};
 $("saveFavBtn").onclick=()=>{let v=getVoice(),lang=$("language").value;if(!favData.some(x=>x.id===v.id)){favData.push({...v,lang,langName:langName(lang)});persist();setStatus(v.name+" favorite-এ যোগ হয়েছে।","good")}else setStatus("এই কণ্ঠটি আগেই favorite-এ আছে।")};
 $("clearHistory").onclick=()=>{historyData=[];persist()};renderVoices();renderHistory();renderFavs();wave();
 </script>
