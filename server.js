@@ -8,6 +8,10 @@ const express = require("express");
 const path = require("path");
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+
+// আপনার ElevenLabs API Key
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_aaf76d456d75fbf6b254c887de70b60147633618d5d95d63";
+
 app.use(express.json({ limit: "200kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -46,7 +50,7 @@ app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
     provider: "ElevenLabs",
-    apiKeyConfigured: Boolean(process.env.ELEVENLABS_API_KEY),
+    apiKeyConfigured: Boolean(ELEVENLABS_API_KEY),
     configuredVoices: Object.values(VOICES).filter(Boolean).length
   });
 });
@@ -54,8 +58,9 @@ app.get("/api/health", (_req, res) => {
 app.post("/api/tts", async (req, res) => {
   try {
     const { text, language, voiceId, emotion = "natural", speed = 1, format = "mp3" } = req.body || {};
-    if (!process.env.ELEVENLABS_API_KEY) {
-      return res.status(503).json({ error: "ELEVENLABS_API_KEY .env ফাইলে সেট করা নেই।" });
+    
+    if (!ELEVENLABS_API_KEY) {
+      return res.status(503).json({ error: "ELEVENLABS_API_KEY সেট করা নেই।" });
     }
     if (typeof text !== "string" || !text.trim()) {
       return res.status(400).json({ error: "Text is required." });
@@ -66,21 +71,24 @@ app.post("/api/tts", async (req, res) => {
     if (!["bn", "en", "hi"].includes(language)) {
       return res.status(400).json({ error: "Unsupported language." });
     }
+
     const voice = VOICES[voiceId];
     if (!voice) {
       return res.status(400).json({
         error: "এই UI voice-এর জন্য .env-এ আসল provider voice ID বসানো নেই।"
       });
     }
+
     const safeSpeed = Math.min(1.2, Math.max(0.7, Number(speed) || 1));
     const instruction = emotionInstructions[emotion] ?? "";
-    const modelId = process.env.ELEVENLABS_MODEL_ID || "eleven_v3";
+    const modelId = process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2";
+
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice)}?output_format=mp3_44100_128`,
       {
         method: "POST",
         headers: {
-          "xi-api-key": process.env.ELEVENLABS_API_KEY,
+          "xi-api-key": ELEVENLABS_API_KEY,
           "Content-Type": "application/json",
           "Accept": "audio/mpeg"
         },
@@ -97,6 +105,7 @@ app.post("/api/tts", async (req, res) => {
         })
       }
     );
+
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 1200);
       console.error("ElevenLabs error:", response.status, detail);
@@ -104,6 +113,7 @@ app.post("/api/tts", async (req, res) => {
         error: `Voice provider error (${response.status}). API key, voice ID, model and plan check করুন।`
       });
     }
+
     const audio = Buffer.from(await response.arrayBuffer());
     res.set({
       "Content-Type": "audio/mpeg",
